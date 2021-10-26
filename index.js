@@ -13,7 +13,7 @@ app.get("/", (req, res) => {
     const bufferLen = Buffer.byteLength(data, "utf8");
 
     let myHead = {
-        "Conntent-Type": "text/html; charset=UTF-8",
+        "Content-Type": "text/html; charset=UTF-8",
         "Content-Length": bufferLen
     };
 
@@ -29,13 +29,27 @@ app.get("/home/style", (req, res) =>{
     const bufferLen = Buffer.byteLength(data, "utf8");
 
     let myHead = {
-        "Conntent-Type": "text/css; charset=UTF-8",
+        "Content-Type": "text/css; charset=UTF-8",
         "Content-Length": bufferLen
     };
 
     res.writeHead(200, myHead);
     res.write(data);
     res.end();   
-})
+});
+
+app.get("/home/main", (req, res) =>{
+    const data = fs.readFileSync("./home/main.js", "utf8");
+    const bufferLen = Buffer.byteLength(data, "utf8");
+
+    let myHead = {
+        "Content-Type": "text/javascript; charset=UTF-8",
+        "Content-Length": bufferLen
+    };
+
+    res.writeHead(200, myHead);
+    res.write(data);
+    res.end();   
+});
 
 app.listen(port);
