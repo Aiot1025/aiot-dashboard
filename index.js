@@ -7,6 +7,7 @@ const jsonParser = bodyParser.json();
 
 const port = process.env.PORT || 80;
 
+// 127.0.0.1/
 app.get("/", (req, res) => {
     const data = fs.readFileSync("./home/index.html", "utf8");
     const bufferLen = Buffer.byteLength(data, "utf8");
@@ -21,5 +22,20 @@ app.get("/", (req, res) => {
     res.end();
 });
 
+// 127.0.0.1/home/style.css
+
+app.get("/home/style", (req, res) =>{
+    const data = fs.readFileSync("./home/style.css", "utf8");
+    const bufferLen = Buffer.byteLength(data, "utf8");
+
+    let myHead = {
+        "Conntent-Type": "text/css; charset=UTF-8",
+        "Content-Length": bufferLen
+    };
+
+    res.writeHead(200, myHead);
+    res.write(data);
+    res.end();   
+})
 
 app.listen(port);
