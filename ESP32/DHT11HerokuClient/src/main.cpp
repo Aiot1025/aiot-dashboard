@@ -30,8 +30,7 @@
 DHT dht(DHT_PIN, DHT_TYPE);
 
 unsigned long saveTime = 0UL;
-
-void sendJson(void* arg);
+String payload;
 
 void setup() {
     Serial.begin(115200);
@@ -49,72 +48,67 @@ void setup() {
     Serial.printf("IP: %s\n", WiFi.localIP().toString().c_str());
 
     configTime(GMTOFFSET_SEC, DAYLIGHTOFFSET_SEC, NTP_SERVER);
-
+    
+    payload.reserve(100);
     dht.begin();
     delay(2000);
 }
 
 void loop() {
     if(millis() > saveTime) {
-        Serial.printf("WiFi Status: %d\n", WiFi.status());
-        xTaskCreate(sendJson, "sendData", 2000, NULL, 1, NULL);
         saveTime += 60000UL;
+        struct tm timeinfo;
+        while(!getLocalTime(&timeinfo));
+        int temp, hum;
+        
+        do {
+            temp = int(dht.readTemperature());
+            hum  = int(dht.readHumidity());
+            delay(2000);
+        } while (temp > 100 || hum > 100);
+
+        Serial.printf("Temp: %d\n", temp);
+        Serial.printf("Hum: %d\n", hum);
+        
+        payload  = "{\"Name\":\"setDHT11Data\",\"Year\":";
+        payload += (timeinfo.tm_year + 1900); 
+        payload += ",\"Month\":";
+        payload += (timeinfo.tm_mon + 1); 
+        payload += ",\"Day\":";
+        payload += timeinfo.tm_mday;
+        payload += ",\"Hour\":";
+        payload += timeinfo.tm_hour;
+        payload += ",\"Min\":";
+        payload += timeinfo.tm_min;
+        payload += ",\"Temp\":";
+        payload +=  temp;
+        payload += ",\"Hum\":";
+        payload +=  hum;
+        payload += "}";
+
+        Serial.println(payload);
+
+        HTTPClient httpClient;
+
+        httpClient.begin(HEROHU_URL);
+        httpClient.addHeader("Content-Type", "application/json");
+        
+        int httpResponseCode = httpClient.POST(payload);
+
+        payload.clear();
+        payload.end();
+
+        if (httpResponseCode > 0) {
+            digitalWrite(LED_PIN, HIGH);
+            Serial.printf("HTTP Response code: %d\n", httpResponseCode);
+            Serial.println(httpClient.getString());
+        }
+        else {
+            digitalWrite(LED_PIN, LOW);
+            Serial.printf("Error code: %d\n", httpResponseCode);
+            ESP.restart();
+        }
+
+        httpClient.end();
     }
-}
-
-void sendJson(void* arg) {
-    struct tm timeinfo;
-    while(!getLocalTime(&timeinfo));
-    int temp, hum;
-    
-    do {
-        temp = int(dht.readTemperature());
-        hum  = int(dht.readHumidity());
-    } while (temp > 100 || hum > 100);
-    
-
-    String payload;
-    payload.reserve(150);
-    payload  = "{\"Name\":\"setDHT11Data\",\"Year\":";
-    payload += (timeinfo.tm_year + 1900); 
-    payload += ",\"Month\":";
-    payload += (timeinfo.tm_mon + 1); 
-    payload += ",\"Day\":";
-    payload += timeinfo.tm_mday;
-    payload += ",\"Hour\":";
-    payload += timeinfo.tm_hour;
-    payload += ",\"Min\":";
-    payload += timeinfo.tm_min;
-    payload += ",\"Temp\":";
-    payload +=  temp;
-    payload += ",\"Hum\":";
-    payload +=  hum;
-    payload += "}";
-
-    Serial.println(payload);
-
-    HTTPClient httpClient;
-
-    httpClient.begin(HEROHU_URL);
-    httpClient.addHeader("Content-Type", "application/json");
-    
-    int httpResponseCode = httpClient.POST(payload);
-
-    payload.clear();
-    payload.end();
-
-    if (httpResponseCode > 0) {
-        digitalWrite(LED_PIN, HIGH);
-        Serial.printf("HTTP Response code: %d\n", httpResponseCode);
-        Serial.println(httpClient.getString());
-    }
-    else {
-        digitalWrite(LED_PIN, LOW);
-        Serial.printf("Error code: %d\n", httpResponseCode);
-        ESP.restart();
-    }
-
-    httpClient.end();
-    
-    vTaskDelete(NULL);
 }
