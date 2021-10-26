@@ -6,11 +6,11 @@
 
 #include "time.h"
 
-#define SSID                SSID
-#define PASSWD              PASSWD
+#define SSID                "Hsun"
+#define PASSWD              "3.14159265358979"
 
 // #define HEROHU_URL          "http://192.168.1.192/data/setDHT11Data"
-#define HEROHU_URL         "http://aiot-devices-dashboard.herokuapp.com/data/setDHT11Data"
+#define HEROHU_URL         "http://aiot1025.herokuapp.com/data/setDHT11Data"
 
 #define DHT_PIN             13
 #define DHT_TYPE            DHT11
